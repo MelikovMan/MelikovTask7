@@ -94,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST'){
     session_start();
     $_SESSION['login'] = $login;
     $_SESSION['uid'] = $id;
+    generateToken();
     header('Location: ./');
   }
   if($action == 'delete'){
@@ -130,6 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST'){
 }
 if (!empty($_COOKIE[session_name()]) &&
 session_start() && !empty($_SESSION['login']) && !empty($_SESSION['uid'])){
+  setcookie(session_name(),'',1000000);
   session_destroy();
 }
 $pwdread = array();

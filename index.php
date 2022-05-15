@@ -129,19 +129,19 @@ $mailregex = "/^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$/";
 $super_list = array('immortality','walkthroughwalls','levitation');
 
 if(empty($_POST['field-name-1']) || !preg_match($regex,$_POST['field-name-1'])){
-    setcookie('name_error', '1', time() + 24 * 60 * 60);
+    setcookie('name_error', '1', $cookie_options);
     $errors = TRUE;
 }
 else {
-	setcookie('name_value', $_POST['field-name-1'], time() + 30 * 24 * 60 * 60);
+	setcookie('name_value', $_POST['field-name-1'], $cookie_options);
 }
 
 if (empty($_POST['field-email']) || !preg_match($mailregex,$_POST['field-email'])){
-    setcookie('email_error', '1', time() + 24 * 60 * 60);
+    setcookie('email_error', '1', $cookie_options);
     $errors = TRUE;
 }
 else {
-	setcookie('email_value', $_POST['field-email'], time() + 30 * 24 * 60 * 60);
+	setcookie('email_value', $_POST['field-email'], $cookie_options);
 }
 
 $date_correct = !empty($_POST['field-date']);
@@ -154,27 +154,27 @@ if($date_correct){
 }
 
 if (!$date_correct){
-    setcookie('birth_error', '1', time() + 24 * 60 * 60);
+    setcookie('birth_error', '1', $cookie_options);
     $errors = TRUE;
 }
 else {
-	setcookie('birth_value', $_POST['field-date'], time() + 30 * 24 * 60 * 60);
+	setcookie('birth_value', $_POST['field-date'], $cookie_options);
 }
 
 if (empty($_POST['radio-group-1']) || ($_POST['radio-group-1']!=='male' && $_POST['radio-group-1']!=='female')){
-    setcookie('sex_error', '1', time() + 24 * 60 * 60);
+    setcookie('sex_error', '1', $cookie_options);
     $errors = TRUE;
 }
 else {
-	setcookie('sex_value', $_POST['radio-group-1'], time() + 30 * 24 * 60 * 60);
+	setcookie('sex_value', $_POST['radio-group-1'], $cookie_options);
 }
 
 if ((!is_numeric($_POST['radio-group-2'])) || (intval($_POST['radio-group-2']) < 1) || (intval($_POST['radio-group-2']) > 5)){
-    setcookie('limb_error', '1', time() + 24 * 60 * 60);
+    setcookie('limb_error', '1', $cookie_options);
     $errors = TRUE;
 }
 else {
-	setcookie('limb_value', $_POST['radio-group-2'], time() + 30 * 24 * 60 * 60);
+	setcookie('limb_value', $_POST['radio-group-2'], $cookie_options);
 }
 
 $super_correct = !empty($_POST['field-name-4']);
@@ -187,26 +187,26 @@ if($super_correct) {
 	}
 }
 if (!$super_correct){
-    setcookie('super_error', '1', time() + 24 * 60 * 60);
+    setcookie('super_error', '1', $cookie_options);
     $errors = TRUE;
 }
 else {
-	setcookie('super_value', json_encode($_POST['field-name-4']), time() + 30 * 24 * 60 * 60);
+	setcookie('super_value', json_encode($_POST['field-name-4']), $cookie_options);
 }
 
 if(empty($_POST['bio-field']) || !preg_match($bioregex,$_POST['bio-field'])){
-    setcookie('bio_error', '1', time() + 24 * 60 * 60);
+    setcookie('bio_error', '1', $cookie_options);
     $errors = TRUE;
 }
 else {
-	setcookie('bio_value', $_POST['bio-field'], time() + 30 * 24 * 60 * 60);
+	setcookie('bio_value', $_POST['bio-field'], $cookie_options);
 }
 if(empty($_POST['checkbox']) && $_POST['checkbox']!='realslim'){
-	setcookie('check_error', '1', time() + 24 * 60 * 60);
+	setcookie('check_error', '1', $cookie_options);
     $errors = TRUE;
 }
 else {
-	setcookie('check_value', $_POST['checkbox'], time() + 30 * 24 * 60 * 60);
+	setcookie('check_value', $_POST['checkbox'], $cookie_options);
 }
 if ($errors) {
     header('Location: index.php');
@@ -233,6 +233,11 @@ if (!empty($_COOKIE[session_name()]) &&
 session_start() && !empty($_SESSION['login']) && !empty($_SESSION['uid'])) {
 // TODO: перезаписать данные в БД новыми данными,
 // кроме логина и пароля.
+	if($_POST['csrf_token']!=$_SESSION['csrf_token']){
+		print_r("CSRF invalid!");
+		exit();
+	}
+
 	try{
 		$stmt = $db->prepare("UPDATE contracts SET name=:name, email=:email, birthdate=:birthdate, sex=:sex, limb_count=:limbs, bio=:bio WHERE id=:this_id");
 		$stmt->bindParam(':name', $name);
@@ -306,8 +311,8 @@ else {
 		print_r($logpdostate->errorInfo());
 		exit();
 	}
-	setcookie('login', $loginn);
-	setcookie('pass', $passok);
+	setcookie('login', $loginn,$cookie_options);
+	setcookie('pass', $passok,$cookie_options);
 	} 
 
 
@@ -317,7 +322,7 @@ else {
 	}
 }
 print_r("Succesfully added new stuff, probably...");
-setcookie('save', '1');
+setcookie('save', '1',$cookie_options);
 header('Location: index.php');
 }
 ?>

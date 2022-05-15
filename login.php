@@ -1,5 +1,5 @@
 <?php
-
+include('lib.php');
 /**
  * Файл login.php для не авторизованного пользователя выводит форму логина.
  * При отправке формы проверяет логин/пароль и создает сессию,
@@ -71,17 +71,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
 }
 // Иначе, если запрос был методом POST, т.е. нужно сделать авторизацию с записью логина в сессию.
 else {
-    include('lib.php');
     $user = 'u47551';
     $pass = '4166807';
     $db = connectToDB($user,$pass);
     $regex = "/^[\w\d\.]+$/";
     if(!preg_match($regex,$_POST['login'])){
-      setcookie('invalid_login',1,time()+ 30 * 24 * 60 * 60);
+      setcookie('invalid_login',1,$cookie_options);
       header('Location: ./login.php');
     }
     if(!preg_match($regex,$_POST['pass'])){
-      setcookie('invalid_pass',1,time()+ 30 * 24 * 60 * 60);
+      setcookie('invalid_pass',1,$cookie_options);
       header('Location: ./login.php');
     }
 		try {
@@ -101,7 +100,7 @@ else {
 	$dbread=$stmt->fetch(PDO::FETCH_ASSOC);
   
     if(empty($dbread['pass_hash']) || !password_verify($_POST['pass'],$dbread['pass_hash'])){
-        setcookie('bad_login',1,time() + 30 * 24 * 60 * 60);
+        setcookie('bad_login',1,$cookie_options);
         header('Location: ./login.php');   
 
     }
@@ -114,7 +113,7 @@ else {
   // Записываем ID пользователя.
   $_SESSION['uid'] = $dbread['p_id'];
   // Делаем перенаправление.
-  print_r($dbread);
+  generateToken();
   header('Location: ./');
     }
 }
