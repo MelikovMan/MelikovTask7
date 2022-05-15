@@ -1,4 +1,6 @@
 <?php
+   include('lib.php');
+   configSessionCookie();
    session_start();   
    if (isset($_POST['param']) && isset($_SESSION["login"]))
    	{

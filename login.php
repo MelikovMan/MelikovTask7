@@ -13,6 +13,7 @@ include('lib.php');
 header('Content-Type: text/html; charset=UTF-8');
 
 // Начинаем сессию.
+configSessionCookie();
 session_start();
 
 // В суперглобальном массиве $_SESSION хранятся переменные сессии.
@@ -24,6 +25,7 @@ if (!empty($_SESSION['login'])) {
   // Делаем перенаправление на форму.
   setcookie(session_name(),'',1000000);
   session_destroy();
+  setcookie('isLogged','',1000000);
   header('Location: ./');
 }
 

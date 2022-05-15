@@ -1,5 +1,6 @@
 <?php
 include('lib.php');
+configSessionCookie();
 function echoUserInfo($row,$db){
 $superstate = $db->prepare("SELECT name FROM superpowers WHERE person_id=:id");
 $superstate->bindParam(':id',$row['id']);
@@ -91,6 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST'){
       print("login couldn't be found, check id validity");
       exit();
     }
+    session_set_cookie_params($cookie_session_options);
     session_start();
     $_SESSION['login'] = $login;
     $_SESSION['uid'] = $id;

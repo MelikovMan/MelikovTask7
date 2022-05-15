@@ -9,6 +9,7 @@ function validateArray($arr){
 	}
 	return true;
 }
+configSessionCookie();
 if ($_SERVER['REQUEST_METHOD'] == 'GET'){
 	  // Массив для временного хранения сообщений пользователю.
 	  $messages = array();
@@ -85,6 +86,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET'){
 
 	  if (validateArray($errors) && !empty($_COOKIE[session_name()]) &&
       session_start() && !empty($_SESSION['login'])){
+		setcookie('isLogged',1,$cookie_options);
+		header('CSRF-Token: '.$_SESSION['csrf_token']);
 		$db = connectToDB($user,$pass);
 		try {
 			$id = $_SESSION['uid'];
@@ -275,6 +278,12 @@ session_start() && !empty($_SESSION['login']) && !empty($_SESSION['uid'])) {
 		}
 }
 else {
+	if (empty($_SESSION['login'])&&!empty($_COOKIE['isLogged'])){
+		print("Sorry, your session has been expired");
+		setcookie('isLogged','',1000000);
+		sleep(5);
+		header('Location: index.php');
+	}
 	try {
 	$stmt = $db->prepare("INSERT INTO contracts SET name=:name, email=:email, birthdate=:birthdate, sex=:sex, limb_count=:limbs, bio=:bio");
 	$stmt->bindParam(':name', $name);
