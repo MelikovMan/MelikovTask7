@@ -1,0 +1,19 @@
+.form-wrapper{
+max-width: 460px;
+margin: auto;
+}
+.form-layer{
+    border: 2px solid grey;
+    border-radius: 5px;
+    padding: 10px;
+    box-shadow: 10px 5px 5px lightgrey;
+}
+.error {
+    border: 2px solid red;
+  }
+.error-text {
+    color:red;
+  }
+body{
+    font-family: "Montserrat", sans-serif;
+}
