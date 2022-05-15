@@ -92,7 +92,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST'){
       print("login couldn't be found, check id validity");
       exit();
     }
-    session_set_cookie_params($cookie_session_options);
     session_start();
     $_SESSION['login'] = $login;
     $_SESSION['uid'] = $id;
@@ -220,9 +219,9 @@ if (empty($_SERVER['PHP_AUTH_USER']) ||
         <th>Leviation</th>
       </tr>
       <tr>
-        <td><?php print(intval($supercounter['immortality'][0]));?></td>
-        <td><?php print(intval($supercounter['walkthroughwalls'][0]));?></td>
-        <td><?php print(intval($supercounter['levitation'][0]));?></td>
+        <td><?php if(!empty($supercounter['immortality'])) print(intval($supercounter['immortality'][0])); else print("0");?></td>
+        <td><?php if(!empty($supercounter['walkthroughwalls'])) print(intval($supercounter['walkthroughwalls'][0])); else print("0");?></td>
+        <td><?php if(!empty($supercounter['levitation'])) print(intval($supercounter['levitation'][0])); else print("0");?></td>
       </tr>
     </table>
  </div>
