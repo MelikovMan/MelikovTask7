@@ -48,6 +48,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
     setcookie('invalid_pass','',1000000);
     $invpass = true;
 }
+/*$db = connectDB();
+$logins = dbQuery($db,"SELECT * FROM login WHERE p_id=:id",array('id'=>22));
+$ar = $logins->fetch(PDO::FETCH_ASSOC);
+var_dump($ar);
+*/
 ?>
 <html lang="en">
 <head>
@@ -73,9 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
 }
 // Иначе, если запрос был методом POST, т.е. нужно сделать авторизацию с записью логина в сессию.
 else {
-    $user = 'u47551';
-    $pass = '4166807';
-    $db = connectToDB($user,$pass);
+    $db = connectDB($user,$pass);
     $regex = "/^[\w\d\.]+$/";
     if(!preg_match($regex,$_POST['login'])){
       setcookie('invalid_login',1,$cookie_options);
@@ -85,9 +88,8 @@ else {
       setcookie('invalid_pass',1,$cookie_options);
       header('Location: ./login.php');
     }
-		try {
-			$stmt = $db->prepare("SELECT pass_hash, p_id FROM login WHERE login=:this_login");
-			$stmt->bindParam(':this_login',$_POST['login']);
+			$stmt = dbQuery($db,"SELECT pass_hash, p_id FROM login WHERE login=:this_login",array('this_login'=>$_POST['login']));
+			/*$stmt->bindParam(':this_login',$_POST['login']);
 			if($stmt->execute()==false) {
 				print_r($stmt->errorCode());
 				print_r($stmt->errorInfo());
@@ -98,8 +100,14 @@ else {
       print('Error : ' . $e->getMessage());
         exit();
     }
+    */
 	$dbread=array();
-	$dbread=$stmt->fetch(PDO::FETCH_ASSOC);
+  try{
+	  $dbread=$stmt->fetch(PDO::FETCH_ASSOC);
+  } catch(PDOException $e) {
+    print('Error : ' . $e->getMessage());
+    exit();
+}
   
     if(empty($dbread['pass_hash']) || !password_verify($_POST['pass'],$dbread['pass_hash'])){
         setcookie('bad_login',1,$cookie_options);

@@ -31,9 +31,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET'){
 	  $errors = array();
 	  $errors['name'] = !empty($_COOKIE['name_error']);
 	  $errors['email'] = !empty($_COOKIE['email_error']);
-	  $errors['birth_date'] = !empty($_COOKIE['birth_error']);
+	  $errors['birth'] = !empty($_COOKIE['birth_error']);
 	  $errors['sex'] = !empty($_COOKIE['sex_error']);
-	  $errors['limbs'] = !empty($_COOKIE['limb_error']);
+	  $errors['limb'] = !empty($_COOKIE['limb_error']);
 	  $errors['super'] = !empty($_COOKIE['super_error']);
 	  $errors['bio'] = !empty($_COOKIE['bio_error']);
 	  $errors['check'] = !empty($_COOKIE['check_error']);
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET'){
 		setcookie('email_error', '', 100000);
 		$messages['bad_email'] = '<span class="error-text">Email can only contain letters, dots, dashes, @ sign, and email domain can have 2-4 letters.</span>';
 	  }
-	  if ($errors['birth_date']) {
+	  if ($errors['birth']) {
 		setcookie('birth_error', '', 100000);
 		$messages['bad_date'] = '<span class="error-text">Must be filled.</span>';
 	  }
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET'){
 		setcookie('sex_error', '', 100000);
 		$messages['bad_sex'] = '<span class="error-text">Invalid choice.</span>';
 	  }
-	  if ($errors['limbs']) {
+	  if ($errors['limb']) {
 		setcookie('limb_error', '', 100000);
 		$messages['bad_limbs'] = '<span class="error-text">Invalid choice.</span>';
 	  }
@@ -88,24 +88,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET'){
       session_start() && !empty($_SESSION['login'])){
 		setcookie('isLogged',1,$cookie_options);
 		header('CSRF-Token: '.$_SESSION['csrf_token']);
-		$db = connectToDB($user,$pass);
+		$db = connectDB();
+		$id = $_SESSION['uid'];
+		$pdostate = dbQuery($db,"SELECT name,email,birthdate,sex,limb_count,bio FROM contracts WHERE id=:id",array('id'=>$id));
+		$superstate = dbQuery($db,"SELECT name FROM superpowers WHERE person_id=:id",array('id'=>$id));
+		$dbread = $pdostate->fetch(PDO::FETCH_ASSOC);
 		try {
-			$id = $_SESSION['uid'];
-			$pdostate = $db->prepare("SELECT name,email,birthdate,sex,limb_count,bio FROM contracts WHERE id=:id");
-			$superstate = $db->prepare("SELECT name FROM superpowers WHERE person_id=:id");
-			$pdostate->bindParam(':id',$id);
-			$superstate->bindParam(':id',$id);
-			if($pdostate->execute()==false) {
-				print_r($pdostate->errorCode());
-				print_r($pdostate->errorInfo());
-				exit();
-			}
-			if($superstate->execute()==false) {
-				print_r($superstate->errorCode());
-				print_r($superstate->errorInfo());
-				exit();
-			}
-			$dbread = $pdostate->fetch(PDO::FETCH_ASSOC);
 			$dbread['super'] = $superstate->fetchAll(PDO::FETCH_COLUMN,0);
 			$values['name'] = strip_tags($dbread['name']);
 			$values['email'] = strip_tags($dbread['email']);
@@ -231,7 +219,7 @@ $sex = $_POST['radio-group-1'];
 $limbs = intval($_POST['radio-group-2']);
 $superpowers = $_POST['field-name-4'];
 $bio= $_POST['bio-field'];
-$db = connectToDB($user,$pass);
+$db = connectDB();
 if (!empty($_COOKIE[session_name()]) &&
 session_start() && !empty($_SESSION['login']) && !empty($_SESSION['uid'])) {
 // TODO: перезаписать данные в БД новыми данными,
@@ -242,26 +230,16 @@ session_start() && !empty($_SESSION['login']) && !empty($_SESSION['uid'])) {
 	}
 
 	try{
-		$stmt = $db->prepare("UPDATE contracts SET name=:name, email=:email, birthdate=:birthdate, sex=:sex, limb_count=:limbs, bio=:bio WHERE id=:this_id");
-		$stmt->bindParam(':name', $name);
-		$stmt->bindParam(':email', $email);
-		$stmt->bindParam(':birthdate', $birth);
-		$stmt->bindParam(':sex', $sex);
-		$stmt->bindParam(':limbs', $limbs);
-		$stmt->bindParam(':bio', $bio);
-		$stmt->bindParam(':this_id', $_SESSION['uid']);
-		if($stmt->execute()==false){
-			print_r($stmt->errorCode());
-			print_r($stmt->errorInfo());
-			exit();
-		}
-		$spped = $db->prepare("DELETE FROM superpowers WHERE person_id=:this_id");
-		$spped->bindParam(':this_id', $_SESSION['uid']);
-		if($spped->execute()==false){
-			print_r($sppe->errorCode());
-			print_r($sppe->errorInfo());
-			exit();
-		}
+		dbQuery($db,"UPDATE contracts SET name=:name, email=:email, birthdate=:birthdate, sex=:sex, limb_count=:limbs, bio=:bio WHERE id=:this_id",array(
+				'name' => $name,
+				'email' => $email,
+				'birthdate' => $birth,
+				'limbs' => $limbs,
+				'bio' => $bio,
+				'sex' => $sex,
+				'this_id' => $_SESSION['uid']	
+		));
+		dbQuery($db,"DELETE FROM superpowers WHERE person_id=:this_id",array('this_id'=>$_SESSION['uid']));
 		$sppe= $db->prepare("INSERT INTO superpowers SET name=:name, person_id=:person");
 		$sppe->bindParam(':person', $_SESSION['uid']);
 		foreach($superpowers as $inserting){
@@ -285,8 +263,15 @@ else {
 		header('Location: index.php');
 	}
 	try {
-	$stmt = $db->prepare("INSERT INTO contracts SET name=:name, email=:email, birthdate=:birthdate, sex=:sex, limb_count=:limbs, bio=:bio");
-	$stmt->bindParam(':name', $name);
+	dbQuery($db,"INSERT INTO contracts SET name=:name, email=:email, birthdate=:birthdate, sex=:sex, limb_count=:limbs, bio=:bio",array(
+		'name' => $name,
+		'email' => $email,
+		'birthdate' => $birth,
+		'limbs' => $limbs,
+		'bio' => $bio,
+		'sex' => $sex,	
+	));
+	/*$stmt->bindParam(':name', $name);
 	$stmt->bindParam(':email', $email);
 	$stmt->bindParam(':birthdate', $birth);
 	$stmt->bindParam(':sex', $sex);
@@ -297,6 +282,7 @@ else {
 	print_r($stmt->errorInfo());
 	exit();
 	}
+	*/
 	$id = $db->lastInsertId();
 	$sppe= $db->prepare("INSERT INTO superpowers SET name=:name, person_id=:person");
 	$sppe->bindParam(':person', $id);
@@ -311,8 +297,12 @@ else {
 	$loginn = uniqid('u',true);
 	$passok = uniqid('',true).strval(rand(0,100));
 	$pass_user = password_hash($passok, PASSWORD_DEFAULT);
-	$logpdostate = $db->prepare("INSERT INTO login SET p_id=:id, login=:login, pass_hash=:hash");
-	$logpdostate->bindParam(':id',$id);
+	dbQuery($db,"INSERT INTO login SET p_id=:id, login=:login, pass_hash=:hash",array(
+		'id' => $id,
+		'login' => $loginn,
+		'hash' => $pass_user,
+	));
+	/*$logpdostate->bindParam(':id',$id);
 	$logpdostate->bindParam(':login',$loginn);
 	$logpdostate->bindParam(':hash',$pass_user);
 	if($logpdostate->execute() == false){
@@ -320,6 +310,7 @@ else {
 		print_r($logpdostate->errorInfo());
 		exit();
 	}
+	*/
 	setcookie('login', $loginn,$cookie_options);
 	setcookie('pass', $passok,$cookie_options);
 	} 

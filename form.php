@@ -39,7 +39,7 @@
 	<label>
 			Birth-date :<br />
 			<input name="field-date" 
-			  type="date" <?php if($errors['birth_date']) print('class="error"');?> value="<?php print($values['birth_date'])?>" /> <?php if($errors['birth_date']) print($messages['bad_date']) ?> 
+			  type="date" <?php if($errors['birth']) print('class="error"');?> value="<?php print($values['birth_date'])?>" /> <?php if($errors['birth']) print($messages['bad_date']) ?> 
 		  </label><br />
 	Sex: <label><input type="radio" <?php if($values['sex'] === 'male') print('checked="checked"');?>
 			name="radio-group-1" value = "male" />
@@ -63,7 +63,7 @@
 			<label><input type="radio" <?php if($values['limbs'] === 5) print('checked="checked"');?>
 			name="radio-group-2" value = "5" />
 			5 </label><br />
-			<?php if($errors['limbs']) print($messages['bad_limbs']) ?>
+			<?php if($errors['limb']) print($messages['bad_limbs']) ?>
 	<label>
 			Superpowers:
 			<br/>

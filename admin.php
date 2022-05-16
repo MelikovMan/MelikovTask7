@@ -2,13 +2,7 @@
 include('lib.php');
 configSessionCookie();
 function echoUserInfo($row,$db){
-$superstate = $db->prepare("SELECT name FROM superpowers WHERE person_id=:id");
-$superstate->bindParam(':id',$row['id']);
-if($superstate->execute() == false){
-  print_r($superstate->errorCode());
-  print_r($superstate->errorInfo());
-  exit();
-}
+$superstate = dbQuery($db,"SELECT name FROM superpowers WHERE person_id=:id",array('id'=>$row['id']));
 print(
 "<table border='1'> 
 <caption> Id:
@@ -75,13 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST'){
   if($action == 'modify'){
    try {
       $db = connectDb();
-      $getLogin = $db->prepare("SELECT login FROM login WHERE p_id=:id");
-      $getLogin->bindParam(':id',$id);
-      if($getLogin->execute() == false){
-        print_r($getLogin->errorCode());
-        print_r($getLogin->errorInfo());
-        exit();
-      }
+      $getLogin = dbQuery($db, "SELECT login FROM login WHERE p_id=:id",array('id'=>$id));
       $login = $getLogin->fetch(PDO::FETCH_ASSOC);
     }
     catch(PDOException $e) {
@@ -101,88 +89,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST'){
   if($action == 'delete'){
     try {
       $db = connectDb();
-      $rmLogin = $db->prepare("DELETE FROM login WHERE p_id=:id");
-      $rmSupers = $db->prepare("DELETE FROM superpowers WHERE person_id=:id");
-      $rmUsers = $db->prepare("DELETE FROM contracts WHERE id=:id");
-      $rmLogin->bindParam(':id',$id);
-      $rmSupers->bindParam(':id',$id);
-      $rmUsers->bindParam(':id',$id);
-      if($rmLogin->execute() == false){
-        print_r($rmLogin->errorCode());
-        print_r($rmLogin->errorInfo());
-        exit();
-      }
-      if($rmSupers->execute() == false){
-        print_r($rmSupers->errorCode());
-        print_r($rmSupers->errorInfo());
-        exit();
-      }
-      if($rmUsers->execute() == false){
-        print_r($rmUsers->errorCode());
-        print_r($rmUsers->errorInfo());
-        exit();
-      }
-    }
-    catch(PDOException $e) {
-      print('Error : ' . $e->getMessage());
-      exit();
-    }
+      $rmLogin = dbQuery($db,"DELETE FROM login WHERE p_id=:id",array('id'=>$id));
+      $rmSupers = dbQuery($db,"DELETE FROM superpowers WHERE person_id=:id",array('id'=>$id));
+      $rmUsers = dbQuery($db,"DELETE FROM contracts WHERE id=:id",array('id'=>$id));
     header('Location: ./admin.php');
-  }
-}
-if (!empty($_COOKIE[session_name()]) &&
-session_start() && !empty($_SESSION['login']) && !empty($_SESSION['uid'])){
-  setcookie(session_name(),'',1000000);
-  session_destroy();
-}
-$pwdread = array();
-$supercounter = array();
-$admin = 'melikov';
-$pwd = 'immadmin123';
-$hsh = password_hash($pwd, PASSWORD_DEFAULT);
-$allusers = null;
-$db = null;
-try {
-  $db = connectDb();
-  $initialauth = $db->prepare("INSERT INTO admin_auth (login,pass_hash)
-  SELECT * FROM (SELECT :login AS login, :pwd_hash AS pass_hash) AS temp
-  WHERE NOT EXISTS (
-      SELECT login FROM admin_auth WHERE login = :login
-  ) LIMIT 1;");
-  $initialauth->bindParam(':login',$admin);
-  $initialauth->bindParam(':pwd_hash',$hsh);
-  if($initialauth->execute() == false){
-		print_r($initialauth->errorCode());
-		print_r($initialauth->errorInfo());
-		exit();
-	}
-  $getPWD = $db->prepare("SELECT pass_hash FROM admin_auth WHERE login=:login");
-  $getPWD->bindParam(':login',$admin);
-  if($getPWD->execute() == false){
-		print_r($getPWD->errorCode());
-		print_r($getPWD->errorInfo());
-		exit();
-	}
-  $pwdread =  $getPWD->fetch(PDO::FETCH_ASSOC);
-  $supcount = $db->prepare("SELECT name, COUNT(name) as sup_qty FROM superpowers GROUP BY name");
-  if($supcount->execute() == false){
-    print_r($supcount->errorCode());
-    print_r($supcount->errorInfo());
+  } catch(PDOException $e) {
+    print('Error : ' . $e->getMessage());
     exit();
-  } 
-  $supercounter=$supcount->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_GROUP);
-  $allusers =  $db->prepare("SELECT * FROM contracts");
-  if($allusers->execute() == false){
-    print_r($allusers->errorCode());
-    print_r($allusers->errorInfo());
-    exit();
-  } 
-} catch(PDOException $e) {
-  print('Error : ' . $e->getMessage());
-  exit();
 }
-
-/**
+}
+}
+/*
  * Задача 6. Реализовать вход администратора с использованием
  * HTTP-авторизации для просмотра и удаления результатов.
  **/
@@ -190,16 +107,38 @@ try {
 // Пример HTTP-аутентификации.
 // PHP хранит логин и пароль в суперглобальном массиве $_SERVER.
 // Подробнее см. стр. 26 и 99 в учебном пособии Веб-программирование и веб-сервисы.
+$db = connectDb();
 if (empty($_SERVER['PHP_AUTH_USER']) ||
-    empty($_SERVER['PHP_AUTH_PW']) ||
-    $_SERVER['PHP_AUTH_USER'] != $admin ||
-    !password_verify($_SERVER['PHP_AUTH_PW'],$pwdread['pass_hash'])) {
-  header('HTTP/1.1 401 Unanthorized');
-  header('WWW-Authenticate: Basic realm="http://u47551.kubsu-dev.ru/MelikovTask6/admin.php"');
-  print('<h1>401 Требуется авторизация</h1>');
-  exit();
+    empty($_SERVER['PHP_AUTH_PW'])) {
+      $getPWD = dbQuery($db, "SELECT pass_hash FROM admin_auth WHERE login=:login",array(
+        'login'=>$_SERVER['PHP_AUTH_USER']
+      ));
+      $pwdread =  $getPWD->fetch(PDO::FETCH_ASSOC);
+      if(empty($pwdread) || !password_verify($_SERVER['PHP_AUTH_PW'],$pwdread['pass_hash']))
+      {
+        header('HTTP/1.1 401 Unanthorized');
+        header('WWW-Authenticate: Basic realm="http://u47551.kubsu-dev.ru/MelikovTask6/admin.php"');
+        print('<h1>401 Требуется авторизация</h1>');
+        exit();
+      }
+  }
+  if (!empty($_COOKIE[session_name()]) &&
+session_start() && !empty($_SESSION['login']) && !empty($_SESSION['uid'])){
+  setcookie(session_name(),'',1000000);
+  setcookie('isLogged','',1000000);
+  session_destroy();
 }
-?>
+  $supercounter = array();
+  $allusers = null;
+  try {
+    $supcount = dbQuery($db,"SELECT name, COUNT(name) as sup_qty FROM superpowers GROUP BY name",null);
+    $supercounter=$supcount->fetchAll(PDO::FETCH_COLUMN|PDO::FETCH_GROUP);
+    $allusers =  dbQuery($db,"SELECT * FROM contracts",null);
+  } catch(PDOException $e) {
+    print('Error : ' . $e->getMessage());
+    exit();
+  }
+  ?>
 <html lang="en">
 <head>
   <meta charset='utf-8'/>

@@ -20,6 +20,28 @@ function connectDB(){
     $db = new PDO('mysql:host=localhost;dbname=u47551', $user, $pass, array(PDO::ATTR_PERSISTENT => true));
     return $db;
 }
+function dbQuery($db,$query,$params){
+    try{
+            $state = $db->prepare($query);
+        if(isset($params)){
+            if($state->execute($params)==false) {
+                print_r($state->errorCode());
+                print_r($state->errorInfo());
+                exit();
+            }
+        } else {
+            if($state->execute()==false) {
+                print_r($state->errorCode());
+                print_r($state->errorInfo());
+                exit();
+            }
+        }
+            return $state;
+    } catch(PDOException $e) {
+        print('Error : ' . $e->getMessage());
+        exit();
+    }
+}
 function generateToken(){
     return $_SESSION['csrf_token'] = base64_encode(openssl_random_pseudo_bytes(32));
 }
